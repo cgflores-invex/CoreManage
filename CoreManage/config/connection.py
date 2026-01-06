@@ -2,12 +2,12 @@ import pyodbc
 from dotenv import load_dotenv
 import os
 
-# Cargar las variables de entorno desde el archivo .env
+# Cargar variables de entorno
 load_dotenv()
-
 DB_SERVER = os.getenv("DB_SERVER")
 DB_DATABASE = os.getenv("DB_DATABASE")
 
+# Conexión a SQL Server
 def get_connection():
     try:
         conn = pyodbc.connect(
@@ -16,7 +16,6 @@ def get_connection():
             f"DATABASE={DB_DATABASE};"
             "Trusted_Connection=yes;"
         )
-        # Prueba rápida de la conexión
         cursor = conn.cursor()
         cursor.execute("SELECT 1")
         cursor.fetchone()
@@ -25,3 +24,4 @@ def get_connection():
     except Exception as e:
         print("❌ Error de conexión:", e)
         return None
+
