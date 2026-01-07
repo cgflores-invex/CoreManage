@@ -114,10 +114,16 @@ class App(tb.Window):
     # --------------------- TREEVIEW ---------------------
     def crear_tree(self, parent, columns):
         tree = ttk.Treeview(parent, columns=columns, show='headings')
-        tree.pack(expand=1, fill='both')
+        tree.pack(expand=True, fill='both')
         for col in columns:
             tree.heading(col, text=col)
-            tree.column(col, width=120, anchor='center')
+            # Ajustar anchos según columnas o un valor base
+            if col.lower() in ['dataareaid', 'descripcion']:
+                tree.column(col, width=150, anchor='center')
+            elif col.lower() in ['periodoid', 'numintercompania', 'numlineanegocio', 'numproyecto']:
+                tree.column(col, width=100, anchor='center')
+            else:
+                tree.column(col, width=120, anchor='center')
         return tree
 
     def clean_row(self, row):
@@ -186,33 +192,6 @@ class App(tb.Window):
         except Exception as e:
             messagebox.showerror("Error", str(e))
 
-    """def eliminar_resultado(self):
-        seleccion = self.tree_resultado.selection()
-        if not seleccion:
-            messagebox.showwarning("Atención", "Selecciona un registro para eliminar")
-            return
-
-        item_id = seleccion[0]
-        valores = self.tree_resultado.item(item_id)["values"]
-
-        # Asegurarse de pasar los tipos correctos a la función de servicio
-        dataareaid = str(valores[0])  # VARCHAR
-        periodoid = int(valores[1])  # NUMÉRICO
-        reclasificacion = int(valores[6])  # NUMÉRICO
-
-        if not messagebox.askyesno("Confirmar", "¿Seguro que deseas eliminar este registro?"):
-            return
-
-        try:
-            # Aquí se elimina de la base de datos
-            eliminar_resultado_service(dataareaid, periodoid, reclasificacion)
-
-            # Si no lanza error, eliminar del TreeView
-            self.tree_resultado.delete(item_id)
-            messagebox.showinfo("Éxito", "Registro eliminado correctamente")
-        except Exception as e:
-            messagebox.showerror("Error", f"No se pudo eliminar en la base de datos:\n{str(e)}")"""
-
     def eliminar_resultado(self):
         seleccion = self.tree_resultado.selection()
         if not seleccion:
@@ -243,7 +222,3 @@ class App(tb.Window):
             messagebox.showerror("Error", str(e))
 
 
-# --------------------- MAIN ---------------------
-if __name__ == "__main__":
-    app = App()
-    app.mainloop()

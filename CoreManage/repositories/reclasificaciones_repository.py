@@ -6,7 +6,7 @@ def get_reclasificaciones_balance():
     if not conn:
         return [], []
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM PLANFIN.EDSA.ReclasificacionesBalance WHERE periodoid = 202601")
+    cursor.execute("SELECT * FROM PLANFIN.EDSA.ReclasificacionesBalance order by PeriodoId desc")
     columns = [column[0] for column in cursor.description]
     rows = cursor.fetchall()
     conn.close()
@@ -17,7 +17,7 @@ def get_reclasificaciones_resultado():
     if not conn:
         return [], []
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM PLANFIN.EDSA.ReclasificacionesResultado WHERE periodoid = 202601")
+    cursor.execute("SELECT * FROM PLANFIN.EDSA.ReclasificacionesResultado order by PeriodoId desc")
     columns = [column[0] for column in cursor.description]
     rows = cursor.fetchall()
     conn.close()
