@@ -1,18 +1,20 @@
 # ui/main_ui.py
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, messagebox
 import ttkbootstrap as tb
 from services.reclasificaciones_service import (
     listar_balance,
     listar_resultado,
     insertar_balance_service,
-    eliminar_balance_service
+    eliminar_balance_service,
+    insertar_resultado_service,
+    eliminar_resultado_service
 )
 
 class App(tb.Window):
     def __init__(self):
         super().__init__(themename="superhero")
-        self.title("Reclasificaciones PLANFIN")
+        self.title("Reclasificaciones")
         self.geometry("1000x600")
 
         tab_control = ttk.Notebook(self)
@@ -31,7 +33,7 @@ class App(tb.Window):
     # --------------------- AGREGAR REGISTRO ---------------------
     def agregar_balance(self):
         popup = tb.Toplevel(self)
-        popup.title("Agregar registro")
+        popup.title("Agregar Balance")
         popup.geometry("400x500")
 
         columns = self.tree_balance["columns"]
@@ -44,44 +46,70 @@ class App(tb.Window):
             entry.pack(pady=5)
             entradas.append(entry)
 
-        # Función que guarda el registro en SQL
+        # Guardar en SQL
         def guardar_nuevo():
             nuevos_valores = [e.get() for e in entradas]
 
-            # Convertir campos numéricos a int
+            # Convertir campos numéricos
             try:
-                nuevos_valores[0] = int(nuevos_valores[0])  # DataAreaId
+
                 nuevos_valores[1] = int(nuevos_valores[1])  # PeriodoId
                 nuevos_valores[3] = int(nuevos_valores[3])  # NumIntercompania
                 nuevos_valores[4] = int(nuevos_valores[4])  # NumLineaNegocio
                 nuevos_valores[5] = int(nuevos_valores[5])  # NumProyecto
                 nuevos_valores[6] = int(nuevos_valores[6])  # Reclasificacion
-            except Exception as conv_err:
-                print("❌ Error al convertir tipos:", conv_err)
+            except Exception:
+                messagebox.showerror("Error", "Verifica los campos numéricos")
                 return
 
             try:
                 insertar_balance_service(tuple(nuevos_valores))
-                print("✅ Registro insertado correctamente en SQL:", nuevos_valores)
-
-                self.tree_balance.insert(
-                    '',
-                    'end',
-                    values=self.clean_row(nuevos_valores)
-                )
-
+                self.tree_balance.insert('', 'end', values=self.clean_row(nuevos_valores))
                 popup.destroy()
             except Exception as e:
-                print("❌ Error al insertar en SQL:", e)
+                messagebox.showerror("Error", str(e))
 
-        # Botón Guardar
-        btn_guardar = tb.Button(
-            popup,
-            text="Guardar",
-            bootstyle="success",
-            command=guardar_nuevo
-        )
-        btn_guardar.pack(pady=15)
+        tb.Button(popup, text="Guardar", bootstyle="success", command=guardar_nuevo).pack(pady=15)
+
+    def agregar_resultado(self):
+        popup = tb.Toplevel(self)
+        popup.title("Agregar Resultado")
+        popup.geometry("400x500")
+
+        columns = self.tree_resultado["columns"]
+        entradas = []
+
+        for col in columns:
+            tk.Label(popup, text=col).pack(pady=5)
+            entry = tk.Entry(popup)
+            entry.pack(pady=5)
+            entradas.append(entry)
+
+        def guardar_nuevo():
+            nuevos_valores = [e.get() for e in entradas]
+
+            # Validar vacíos
+            if any(v == "" for v in nuevos_valores):
+                messagebox.showerror("Error", "Todos los campos son obligatorios")
+                return
+
+            # Convertir campos numéricos
+            try:
+
+                nuevos_valores[1] = int(nuevos_valores[1])  # PeriodoId
+                nuevos_valores[6] = int(nuevos_valores[6])  # Reclasificacion
+            except Exception:
+                messagebox.showerror("Error", "Verifica los campos numéricos")
+                return
+
+            try:
+                insertar_resultado_service(tuple(nuevos_valores))
+                self.tree_resultado.insert('', 'end', values=self.clean_row(nuevos_valores))
+                popup.destroy()
+            except Exception as e:
+                messagebox.showerror("Error", str(e))
+
+        tb.Button(popup, text="Guardar", bootstyle="success", command=guardar_nuevo).pack(pady=15)
 
     # --------------------- TREEVIEW ---------------------
     def crear_tree(self, parent, columns):
@@ -97,7 +125,7 @@ class App(tb.Window):
         for val in row:
             if val is None:
                 cleaned.append("")
-            elif hasattr(val, 'to_eng_string'):  # para Decimal
+            elif hasattr(val, 'to_eng_string'):
                 cleaned.append(float(val))
             else:
                 val_str = str(val)
@@ -109,8 +137,6 @@ class App(tb.Window):
     # --------------------- CARGAR DATOS ---------------------
     def cargar_balance(self):
         rows, columns = listar_balance()
-        if not rows:
-            return
         if self.tree_balance:
             self.tree_balance.destroy()
 
@@ -121,54 +147,100 @@ class App(tb.Window):
         for row in rows:
             self.tree_balance.insert('', 'end', values=self.clean_row(row))
 
-        # Botón Agregar
-        btn_agregar = tb.Button(
-            container,
-            text="Agregar registro",
-            bootstyle="success",
-            command=self.agregar_balance
-        )
-        btn_agregar.pack(pady=10)
-
-        # Botón Eliminar
-        btn_eliminar = tb.Button(
-            container,
-            text="Eliminar registro",
-            bootstyle="danger",
-            command=self.eliminar_balance
-        )
-        btn_eliminar.pack(pady=5)
+        tb.Button(container, text="Agregar registro", bootstyle="success", command=self.agregar_balance).pack(pady=10)
+        tb.Button(container, text="Eliminar registro", bootstyle="danger", command=self.eliminar_balance).pack(pady=5)
 
     def cargar_resultado(self):
         rows, columns = listar_resultado()
-        if not rows:
-            return
         if self.tree_resultado:
             self.tree_resultado.destroy()
-        self.tree_resultado = self.crear_tree(self.tab_resultado, columns)
+
+        container = tb.Frame(self.tab_resultado)
+        container.pack(expand=1, fill='both', padx=10, pady=10)
+
+        self.tree_resultado = self.crear_tree(container, columns)
         for row in rows:
             self.tree_resultado.insert('', 'end', values=self.clean_row(row))
+
+        tb.Button(container, text="Agregar registro", bootstyle="success", command=self.agregar_resultado).pack(pady=10)
+        tb.Button(container, text="Eliminar registro", bootstyle="danger", command=self.eliminar_resultado).pack(pady=5)
 
     # --------------------- ELIMINAR ---------------------
     def eliminar_balance(self):
         seleccion = self.tree_balance.selection()
         if not seleccion:
-            print("No hay fila seleccionada")
+            messagebox.showwarning("Atención", "Selecciona un registro para eliminar")
             return
 
         item_id = seleccion[0]
         valores = self.tree_balance.item(item_id)["values"]
+        dataareaid, periodoid, reclasificacion = valores[0], valores[1], valores[6]
 
-        dataareaid = valores[0]
-        periodoid = valores[1]
-        reclasificacion = valores[6]
+        if not messagebox.askyesno("Confirmar", "¿Seguro que deseas eliminar este registro?"):
+            return
 
         try:
             eliminar_balance_service(dataareaid, periodoid, reclasificacion)
             self.tree_balance.delete(item_id)
-            print("✅ Registro eliminado correctamente")
+            messagebox.showinfo("Éxito", "Registro eliminado correctamente")
         except Exception as e:
-            print("❌ Error al eliminar:", e)
+            messagebox.showerror("Error", str(e))
+
+    """def eliminar_resultado(self):
+        seleccion = self.tree_resultado.selection()
+        if not seleccion:
+            messagebox.showwarning("Atención", "Selecciona un registro para eliminar")
+            return
+
+        item_id = seleccion[0]
+        valores = self.tree_resultado.item(item_id)["values"]
+
+        # Asegurarse de pasar los tipos correctos a la función de servicio
+        dataareaid = str(valores[0])  # VARCHAR
+        periodoid = int(valores[1])  # NUMÉRICO
+        reclasificacion = int(valores[6])  # NUMÉRICO
+
+        if not messagebox.askyesno("Confirmar", "¿Seguro que deseas eliminar este registro?"):
+            return
+
+        try:
+            # Aquí se elimina de la base de datos
+            eliminar_resultado_service(dataareaid, periodoid, reclasificacion)
+
+            # Si no lanza error, eliminar del TreeView
+            self.tree_resultado.delete(item_id)
+            messagebox.showinfo("Éxito", "Registro eliminado correctamente")
+        except Exception as e:
+            messagebox.showerror("Error", f"No se pudo eliminar en la base de datos:\n{str(e)}")"""
+
+    def eliminar_resultado(self):
+        seleccion = self.tree_resultado.selection()
+        if not seleccion:
+            messagebox.showwarning("Atención", "Selecciona un registro para eliminar")
+            return
+
+        item_id = seleccion[0]
+        valores = self.tree_resultado.item(item_id)["values"]
+        dataareaid, periodoid, reclasificacion = valores[0], valores[1], valores[8]
+
+        # Convertir tipos correctamente
+        try:
+            dataareaid = str(dataareaid).strip()  # VARCHAR
+            periodoid = int(periodoid)  # INT
+            reclasificacion = float(reclasificacion)  # DECIMAL
+        except ValueError:
+            messagebox.showerror("Error", "Error en los tipos de PeriodoId o Reclasificación")
+            return
+
+        if not messagebox.askyesno("Confirmar", "¿Seguro que deseas eliminar este registro?"):
+            return
+
+        try:
+            eliminar_resultado_service(dataareaid, periodoid, reclasificacion)
+            self.tree_resultado.delete(item_id)  # Eliminar del TreeView
+            messagebox.showinfo("Éxito", "Registro eliminado correctamente")
+        except Exception as e:
+            messagebox.showerror("Error", str(e))
 
 
 # --------------------- MAIN ---------------------
