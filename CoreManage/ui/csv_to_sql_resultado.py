@@ -3,7 +3,12 @@ from tkinter import ttk, filedialog, messagebox
 import pandas as pd
 import ttkbootstrap as tb
 from datetime import datetime
-from services.reclasificaciones_service import insertar_resultado_service,eliminar_resultado_service_periodo
+import threading
+
+from services.reclasificaciones_service import (
+    insertar_resultado_service,
+    eliminar_resultado_service_periodo
+)
 
 
 def generar_periodos(anio: int) -> list[str]:
@@ -16,38 +21,50 @@ class CsvToSqlResultadoApp(tb.Window):
         self.title("Cargar Layout Resultado")
         self.geometry("1000x500")
 
-        # Frame para controles (botones + combo)
+        self.df: pd.DataFrame | None = None
+        self.tree: ttk.Treeview | None = None
+
+        self._build_ui()
+
+    # ---------------- UI ---------------- #
+
+    def _build_ui(self):
         control_frame = tb.Frame(self)
-        control_frame.pack(fill='x', padx=10, pady=10)
+        control_frame.pack(fill="x", padx=10, pady=10)
 
-        # Botón para cargar CSV
-        tb.Button(control_frame, text="Cargar CSV Resultado", bootstyle="primary", command=self.load_csv).pack(side='left', padx=5)
+        tb.Button(
+            control_frame,
+            text="Seleccionar CSV Resultado",
+            bootstyle="primary",
+            command=self.load_csv
+        ).pack(side="left", padx=5)
 
-        # Combo periodo
         anio_actual = datetime.now().year
         periodos = generar_periodos(anio_actual)
+
         self.periodo_var = tk.StringVar()
         self.combo_periodo = tb.Combobox(
             control_frame,
             textvariable=self.periodo_var,
             values=periodos,
-            bootstyle="info",
             state="readonly",
-            width=15
+            width=15,
+            bootstyle="info"
         )
-        self.combo_periodo.pack(side='left', padx=5)
-        mes_actual = datetime.now().month
-        self.combo_periodo.current(mes_actual - 1)
+        self.combo_periodo.pack(side="left", padx=5)
+        self.combo_periodo.current(datetime.now().month - 1)
 
-        # Botón para insertar en SQL
-        tb.Button(control_frame, text="Insertar en SQL Server", bootstyle="success", command=self.insert_to_sql).pack(side='left', padx=5)
+        tb.Button(
+            control_frame,
+            text="Insertar en SQL Server",
+            bootstyle="success",
+            command=self.insert_to_sql
+        ).pack(side="left", padx=5)
 
-        # Frame para la tabla (Treeview)
         self.tree_frame = tb.Frame(self)
-        self.tree_frame.pack(expand=True, fill='both', padx=10, pady=(0,10))
+        self.tree_frame.pack(expand=True, fill="both", padx=10, pady=(0, 10))
 
-        self.tree = None
-        self.df = None  # Guardaremos el DataFrame cargado
+    # ---------------- CSV ---------------- #
 
     def load_csv(self):
         filepath = filedialog.askopenfilename(
@@ -57,60 +74,119 @@ class CsvToSqlResultadoApp(tb.Window):
             return
 
         try:
-            self.df = pd.read_csv(filepath, dtype=str, delimiter=',')
+            self.df = pd.read_csv(
+                filepath,
+                encoding="utf-8",
+                dtype=str
+            )
 
-            # Limpiar nombres de columna (eliminar espacios extra)
+            # Limpiar nombres de columnas
             self.df.columns = [c.strip() for c in self.df.columns]
 
-            # Revisar que tenga exactamente 9 columnas
+            # Validación Resultado: 9 columnas
             if len(self.df.columns) != 9:
-                messagebox.showerror("Error",
-                                     f"El CSV debe tener 9 columnas. Columnas detectadas: {len(self.df.columns)}")
+                messagebox.showerror(
+                    "Error",
+                    f"El CSV debe tener exactamente 9 columnas.\nDetectadas: {len(self.df.columns)}"
+                )
+                self.df = None
                 return
 
             self.display_data(self.df)
-            messagebox.showinfo("Éxito", f"Archivo cargado: {filepath}")
+            messagebox.showinfo("Éxito", "Archivo cargado correctamente")
+
         except Exception as e:
             messagebox.showerror("Error", f"No se pudo cargar el archivo:\n{e}")
 
-    def display_data(self, df):
+    # ---------------- TREEVIEW ---------------- #
+
+    def display_data(self, df: pd.DataFrame):
         if self.tree:
             self.tree.destroy()
 
         columns = list(df.columns)
-        self.tree = ttk.Treeview(self.tree_frame, columns=columns, show="headings")
-        self.tree.pack(expand=True, fill='both')
+
+        self.tree = ttk.Treeview(
+            self.tree_frame,
+            columns=columns,
+            show="headings"
+        )
+
+        vsb = ttk.Scrollbar(
+            self.tree_frame,
+            orient="vertical",
+            command=self.tree.yview
+        )
+        self.tree.configure(yscrollcommand=vsb.set)
+
+        self.tree.pack(side="left", expand=True, fill="both")
+        vsb.pack(side="right", fill="y")
 
         for col in columns:
             self.tree.heading(col, text=col)
-            self.tree.column(col, width=120, anchor="center")
+            self.tree.column(col, anchor="center", width=120)
 
-        for _, row in df.iterrows():
-            self.tree.insert("", "end", values=[str(v) for v in row])
+        for row in df.itertuples(index=False, name=None):
+            self.tree.insert("", "end", values=row)
+
+    # ---------------- SQL ---------------- #
 
     def insert_to_sql(self):
         if self.df is None or self.df.empty:
-            messagebox.showwarning("Atención", "Primero carga un CSV")
+            messagebox.showwarning("Atención", "Primero cargue un CSV")
             return
 
-        success_count = 0
-        for _, row in self.df.iterrows():
-            try:
-                data = tuple(row)
-                if len(data) != 9:
-                    print("❌ Fila ignorada por longitud incorrecta:", data)
-                    continue
+        periodo = self.periodo_var.get()
+        if not periodo:
+            messagebox.showwarning("Atención", "Seleccione un período")
+            return
 
-                insertar_resultado_service(data)
-                success_count += 1
-            except Exception as e:
-                messagebox.showerror("Error", f"No se pudo insertar fila:\n{e}")
+        confirmar = messagebox.askyesno(
+            "Confirmar operación",
+            f"Se eliminarán TODOS los registros del período {periodo}.\n\n¿Desea continuar?"
+        )
+        if not confirmar:
+            return
 
-        messagebox.showinfo("Insertar en SQL", f"{success_count} registros insertados correctamente")
+        threading.Thread(
+            target=self._insert_worker,
+            args=(periodo,),
+            daemon=True
+        ).start()
+
+    def _insert_worker(self, periodo: str):
+        try:
+            # 🔹 El combo SOLO controla la eliminación
+            eliminar_resultado_service_periodo(periodo)
+
+            df = self.df.copy()
+
+            success = 0
+            for row in df.itertuples(index=False, name=None):
+                insertar_resultado_service(row)
+                success += 1
+
+            self.after(
+                0,
+                lambda: messagebox.showinfo(
+                    "Proceso finalizado",
+                    f"{success} registros insertados correctamente"
+                )
+            )
+
+        except Exception as e:
+            self.after(
+                0,
+                lambda: messagebox.showerror(
+                    "Error",
+                    f"Ocurrió un error durante la inserción:\n{e}"
+                )
+            )
 
 
 if __name__ == "__main__":
     app = CsvToSqlResultadoApp()
     app.mainloop()
+
 
 

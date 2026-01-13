@@ -4,7 +4,6 @@ import pandas as pd
 import ttkbootstrap as tb
 from datetime import datetime
 import threading
-
 from services.reclasificaciones_service import (
     insertar_balance_service,
     eliminar_balance_service_periodo
@@ -143,12 +142,14 @@ class CsvToSqlApp(tb.Window):
 
     def _insert_worker(self, periodo: str):
         try:
+            # El combo solo controla qué período eliminar
             eliminar_balance_service_periodo(periodo)
 
             df = self.df.copy()
 
-            if "PeriodoId" in df.columns:
-                df["PeriodoId"] = periodo
+            # ❌ Se elimina la línea que pisaba el PeriodoId
+            # if "PeriodoId" in df.columns:
+            #     df["PeriodoId"] = periodo
 
             success = 0
             for row in df.itertuples(index=False, name=None):
@@ -176,3 +177,4 @@ class CsvToSqlApp(tb.Window):
 if __name__ == "__main__":
     app = CsvToSqlApp()
     app.mainloop()
+
