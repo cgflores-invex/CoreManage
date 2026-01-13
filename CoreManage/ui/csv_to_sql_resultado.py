@@ -3,7 +3,7 @@ from tkinter import ttk, filedialog, messagebox
 import pandas as pd
 import ttkbootstrap as tb
 from datetime import datetime
-from services.reclasificaciones_service import insertar_resultado_service
+from services.reclasificaciones_service import insertar_resultado_service,eliminar_resultado_service_periodo
 
 
 def generar_periodos(anio: int) -> list[str]:

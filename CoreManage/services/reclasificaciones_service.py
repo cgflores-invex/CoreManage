@@ -5,6 +5,8 @@ from repositories.reclasificaciones_repository import (
     eliminar_balance as repo_eliminar_balance,
     insertar_resultado as repo_insertar_resultado,
     eliminar_resultado as repo_eliminar_resultado,
+    eliminar_balance_periodo as repo_eliminar_balance_periodo,
+    eliminar_resultado_periodo as repo_eliminar_resutado_periodo
 
 )
 
@@ -26,5 +28,14 @@ def insertar_resultado_service(data):
 def eliminar_balance_service(dataareaid, periodoid, reclasificacion):
     repo_eliminar_balance(dataareaid, periodoid, reclasificacion)
 
+
+def eliminar_balance_service_periodo(periodoid):
+    repo_eliminar_balance_periodo(periodoid)
+
 def eliminar_resultado_service(dataareaid, periodoid, reclasificacion):
     repo_eliminar_resultado(dataareaid, periodoid, reclasificacion)
+
+def eliminar_resultado_service_periodo(periodoid):
+    repo_eliminar_resutado_periodo(periodoid)
+
+

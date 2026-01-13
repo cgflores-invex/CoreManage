@@ -77,6 +77,28 @@ def eliminar_balance(dataareaid, periodoid, reclasificacion):
     cursor.close()
     conn.close()
 
+def eliminar_balance_periodo(periodoid):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        DELETE FROM PLANFIN.EDSA.ReclasificacionesBalance 
+        WHERE PeriodoId = ?
+    """, (periodoid,))
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+def eliminar_resultado_periodo(periodoid):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        DELETE FROM PLANFIN.EDSA.ReclasificacionesResultado 
+        WHERE PeriodoId = ?
+    """, (periodoid,))
+    conn.commit()
+    cursor.close()
+    conn.close()
+
 def eliminar_resultado(dataareaid, periodoid, reclasificacion):
     conn = get_connection()
     if not conn:
