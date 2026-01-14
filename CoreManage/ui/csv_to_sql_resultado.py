@@ -15,9 +15,9 @@ def generar_periodos(anio: int) -> list[str]:
     return [f"{anio}{mes:02d}" for mes in range(1, 13)]
 
 
-class CsvToSqlResultadoApp(tb.Window):
-    def __init__(self):
-        super().__init__(themename="superhero")
+class CsvToSqlResultadoApp(tb.Toplevel):
+    def __init__(self, parent=None):
+        super().__init__(master=parent)  # No usar themename aquí
         self.title("Cargar Layout Resultado")
         self.geometry("1000x500")
 
@@ -27,7 +27,6 @@ class CsvToSqlResultadoApp(tb.Window):
         self._build_ui()
 
     # ---------------- UI ---------------- #
-
     def _build_ui(self):
         control_frame = tb.Frame(self)
         control_frame.pack(fill="x", padx=10, pady=10)
@@ -65,7 +64,6 @@ class CsvToSqlResultadoApp(tb.Window):
         self.tree_frame.pack(expand=True, fill="both", padx=10, pady=(0, 10))
 
     # ---------------- CSV ---------------- #
-
     def load_csv(self):
         filepath = filedialog.askopenfilename(
             filetypes=[("CSV Files", "*.csv"), ("All files", "*.*")]
@@ -80,10 +78,8 @@ class CsvToSqlResultadoApp(tb.Window):
                 dtype=str
             )
 
-            # Limpiar nombres de columnas
             self.df.columns = [c.strip() for c in self.df.columns]
 
-            # Validación Resultado: 9 columnas
             if len(self.df.columns) != 9:
                 messagebox.showerror(
                     "Error",
@@ -99,7 +95,6 @@ class CsvToSqlResultadoApp(tb.Window):
             messagebox.showerror("Error", f"No se pudo cargar el archivo:\n{e}")
 
     # ---------------- TREEVIEW ---------------- #
-
     def display_data(self, df: pd.DataFrame):
         if self.tree:
             self.tree.destroy()
@@ -130,7 +125,6 @@ class CsvToSqlResultadoApp(tb.Window):
             self.tree.insert("", "end", values=row)
 
     # ---------------- SQL ---------------- #
-
     def insert_to_sql(self):
         if self.df is None or self.df.empty:
             messagebox.showwarning("Atención", "Primero cargue un CSV")
@@ -156,7 +150,6 @@ class CsvToSqlResultadoApp(tb.Window):
 
     def _insert_worker(self, periodo: str):
         try:
-            # 🔹 El combo SOLO controla la eliminación
             eliminar_resultado_service_periodo(periodo)
 
             df = self.df.copy()
@@ -182,11 +175,4 @@ class CsvToSqlResultadoApp(tb.Window):
                     f"Ocurrió un error durante la inserción:\n{e}"
                 )
             )
-
-
-if __name__ == "__main__":
-    app = CsvToSqlResultadoApp()
-    app.mainloop()
-
-
 

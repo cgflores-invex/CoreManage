@@ -9,7 +9,9 @@ class MainMenu(tb.Window):
     def __init__(self):
         super().__init__(themename="superhero")  # <-- CORRECCIÓN AQUÍ
         self.title("Menú Principal")
-        self.geometry("1000x600")
+        self.geometry("1000x1000")
+
+        self.configure(bg="#f2f2f2")
 
         base_path = os.path.dirname(__file__)
         image_path = os.path.join(base_path, "assets", "invex_logo.png")
@@ -26,7 +28,7 @@ class MainMenu(tb.Window):
         tb.Button(
             self,
             text="Reclasificaciones",
-            bootstyle="primary",
+            bootstyle="dark",
             command=self.abrir_reclasificaciones
         ).pack(pady=20)
 
@@ -34,30 +36,25 @@ class MainMenu(tb.Window):
         tb.Button(
             self,
             text="Cargar Layout Balance",
-            bootstyle="warning",
+            bootstyle="dark",
             command=self.abrir_layout_balance
         ).pack(pady=20)
         # Botón Layout Resultado
         tb.Button(
             self,
             text="Layout Resultado",
-            bootstyle="warning",
+            bootstyle="dark",
             command=self.abrir_layout_resultado
-        ).pack(pady=20)
+        ).pack(pady=15)
 
     def abrir_reclasificaciones(self):
-        reclas_window = App()
-        reclas_window.mainloop()
+        App(self)
 
     def abrir_layout_balance(self):
-        layout_window = CsvToSqlApp()
-        layout_window.mainloop()
+        CsvToSqlApp(self)
 
     def abrir_layout_resultado(self):
-        resultado_window = CsvToSqlResultadoApp()
-        resultado_window.mainloop()
-
-
+        CsvToSqlResultadoApp(self)
 if __name__ == "__main__":
     menu = MainMenu()
     menu.mainloop()

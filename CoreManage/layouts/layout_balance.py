@@ -4,7 +4,7 @@ import ttkbootstrap as tb
 from tkinter import ttk, messagebox
 from services.reclasificaciones_service import insertar_balance_service
 
-class CsvToSqlApp(tb.Window):
+class CsvToSqlApp(tb.Toplevel):
     def __init__(self, csv_path=None):
         super().__init__(themename="superhero")
         self.title("Cargar Layout Balance")

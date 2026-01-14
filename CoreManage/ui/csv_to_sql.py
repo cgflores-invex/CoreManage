@@ -4,6 +4,7 @@ import pandas as pd
 import ttkbootstrap as tb
 from datetime import datetime
 import threading
+
 from services.reclasificaciones_service import (
     insertar_balance_service,
     eliminar_balance_service_periodo
@@ -14,9 +15,10 @@ def generar_periodos(anio: int) -> list[str]:
     return [f"{anio}{mes:02d}" for mes in range(1, 13)]
 
 
-class CsvToSqlApp(tb.Window):
-    def __init__(self):
-        super().__init__(themename="superhero")
+class CsvToSqlApp(tb.Toplevel):
+    def __init__(self, master):
+        super().__init__(master)
+
         self.title("Cargar Layout Balance")
         self.geometry("900x500")
 
@@ -41,7 +43,9 @@ class CsvToSqlApp(tb.Window):
         anio_actual = datetime.now().year
         periodos = generar_periodos(anio_actual)
 
-        self.periodo_var = tk.StringVar()
+        # ⚠️ StringVar SIEMPRE con master
+        self.periodo_var = tk.StringVar(master=self)
+
         self.combo_periodo = tb.Combobox(
             control_frame,
             textvariable=self.periodo_var,
@@ -142,14 +146,10 @@ class CsvToSqlApp(tb.Window):
 
     def _insert_worker(self, periodo: str):
         try:
-            # El combo solo controla qué período eliminar
+            # El combo SOLO define qué período eliminar
             eliminar_balance_service_periodo(periodo)
 
             df = self.df.copy()
-
-            # ❌ Se elimina la línea que pisaba el PeriodoId
-            # if "PeriodoId" in df.columns:
-            #     df["PeriodoId"] = periodo
 
             success = 0
             for row in df.itertuples(index=False, name=None):
@@ -173,8 +173,4 @@ class CsvToSqlApp(tb.Window):
                 )
             )
 
-
-if __name__ == "__main__":
-    app = CsvToSqlApp()
-    app.mainloop()
 

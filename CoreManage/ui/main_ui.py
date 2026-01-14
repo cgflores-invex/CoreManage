@@ -11,11 +11,13 @@ from services.reclasificaciones_service import (
     eliminar_resultado_service
 )
 
-class App(tb.Window):
-    def __init__(self):
-        super().__init__(themename="superhero")
+class App(tb.Toplevel):
+    def __init__(self, parent=None):
+        super().__init__(master=parent)  # Solo el parent
         self.title("Reclasificaciones")
-        self.geometry("1000x600")
+        self.geometry("1000x700")
+
+
 
         tab_control = ttk.Notebook(self)
         self.tab_balance = ttk.Frame(tab_control)
@@ -220,5 +222,8 @@ class App(tb.Window):
             messagebox.showinfo("Éxito", "Registro eliminado correctamente")
         except Exception as e:
             messagebox.showerror("Error", str(e))
+
+
+
 
 
